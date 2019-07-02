@@ -1,3 +1,5 @@
+
+
 #include "pch.h"
 #include <iostream>
 #include <list>
@@ -81,11 +83,15 @@ public:
 	}
 	void inc() override {
 		value++;
-		if (value >= 3) value = 0;
+		if (value > 2) value = 0;
 	}
 	void dec() override {
-		value--;
-		if (value < 0) value = 2;
+		if (value > 0) {
+			value--;
+		}
+		else {
+			value = 2;
+		}
 	}
 	const char *svalue() override {
 		if (value == 0) return "Auto";
@@ -102,8 +108,8 @@ int main()
 	FloatByHalf mNight("Night",65.0f);
 	OnOff mSystemOn("System", true);
 	OnOff mVacayMode("Vacation", false);
-	OnOff mPumpMode("Pump Mode", 0);
-	OnOff mFanMode("Fan Mode", 0);
+	TriState mPumpMode("Pump Mode", 0);
+	TriState mFanMode("Fan Mode", 0);
 	
 	list.push_back(&mTDay);
 	list.push_back(&mNight);	
