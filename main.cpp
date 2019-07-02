@@ -1,17 +1,19 @@
 
-
 #include "pch.h"
 #include <iostream>
 #include <list>
 #include <conio.h>
+#include <functional>
 
 
 class MenuItemB {
 public:
+	std::function<void()> onExit;
 	virtual void inc() {};
 	virtual void dec() {};
 	virtual const char * desc() { return "Haha"; };
 	virtual const char * svalue() { return "---"; };
+	virtual void changed() { };
 };
 
 template<typename T>
@@ -25,6 +27,7 @@ public:
 	}
 	const char * desc() override { return _desc; };
 	virtual	void set(T val) { value = val; }
+	virtual typename T get() { return value; }
 };
 
 class FloatByHalf : public MenuItem<float> {
@@ -34,10 +37,12 @@ public:
 		value = val;
 	}
 	void inc() override {
-		value += 0.2f;
+		value += 0.5f;
+
 	}
 	void dec() override {
-		value -= 0.2f;
+		value -= 0.5f;
+
 	}
 	//Has a little buffer, you should use it while you got it.....
 	const char *svalue() override {
@@ -52,9 +57,11 @@ public:
 	}
 	void inc() override {
 		value += 1;
+
 	}
 	void dec() override {
 		value -= 1;
+
 	}
 };
 
@@ -65,13 +72,32 @@ public:
 	}
 	void inc() override {
 		value = !value;
+
 	}
 	void dec() override {
+
 		value = !value;
 	}
 	const char *svalue() override {
 		if (value) return "On";
 		return "Off";
+	}
+
+};
+
+class YesNo : public OnOff {
+public:
+	YesNo(const char *desc, bool val) :OnOff(desc, val) {}
+	
+	const char *svalue() override {
+		if (value) return "Yes";
+		return "No";
+	}
+
+	void changed() override {
+		if (value) {
+			if (onExit != NULL) onExit();
+		}
 	}
 
 };
@@ -103,13 +129,19 @@ public:
 int main()
 {
 	std::list<MenuItemB*> list;
-
+	bool done = false;
 	FloatByHalf mTDay("Day",77.0f);
 	FloatByHalf mNight("Night",65.0f);
 	OnOff mSystemOn("System", true);
 	OnOff mVacayMode("Vacation", false);
 	TriState mPumpMode("Pump Mode", 0);
 	TriState mFanMode("Fan Mode", 0);
+	YesNo mSaveEEPROM("Save to EEPROM", false);
+	YesNo mSave("Exit", false);
+
+	mSave.onExit = [&done] {
+		done = true;
+	};
 	
 	list.push_back(&mTDay);
 	list.push_back(&mNight);	
@@ -117,21 +149,33 @@ int main()
 	list.push_back(&mVacayMode);
 	list.push_back(&mPumpMode);
 	list.push_back(&mFanMode);
+	list.push_back(&mSaveEEPROM);
+	list.push_back(&mSave);
 
 	auto ip = list.begin();
 	std::cout << "Test Menu\n";
-	bool done = false;
+	
 	while (!done) {
-		std::cout << (*ip)->desc() << ":" << (*ip)->svalue() << std::endl;
+		MenuItemB *menu = (*ip);
+		std::cout << menu->desc() << ":" << menu->svalue() << std::endl;
  		char cc = _getch();
 		std::cout << "Pressed: " << cc  << "\n";
-  		if (cc == 'a') (*ip)->dec();
-		if (cc == 'd') (*ip)->inc();
+  		if (cc == 'a') menu->dec();
+		if (cc == 'd') menu->inc();
 		if (cc == 's') {
+			menu->changed();
 			ip++;
 			if (ip == list.end()) ip = list.begin();
 		}
-		if (cc == ' ') done = true;
+
+		if (cc == ' ') {
+			
+			done = true;
+		}
+	}
+	std::cout << "Menu Exit\n";
+	if (mSaveEEPROM.get()) {
+		std::cout << "Saving to EEPROM\n";
 	}
 	return 0;
 }
